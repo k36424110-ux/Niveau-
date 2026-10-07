@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>BTC Zones</title>
+<style>
+:root{--bg:#10131a;--card:#181c26;--tx:#e8ecf3;--mut:#8791a5;--long:#2fd08a;--short:#ff5d6c;--gold:#f2b84b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,sans-serif;padding:env(safe-area-inset-top) 12px 40px}
+h1{font-size:1.1rem;margin:14px 0 4px}.sub{color:var(--mut);font-size:.8rem}
+.price{position:sticky;top:0;background:var(--bg);padding:10px 0;border-bottom:2px solid var(--gold);display:flex;justify-content:space-between;align-items:baseline;z-index:2}
+.price b{font-size:1.7rem;font-variant-numeric:tabular-nums}
+.ctx{display:flex;flex-wrap:wrap;gap:6px 14px;color:var(--mut);font-size:.8rem;margin:8px 0}
+.z{background:var(--card);border-left:4px solid;border-radius:6px;padding:10px 12px;margin:8px 0}
+.z.long{border-color:var(--long)}.z.short{border-color:var(--short)}
+.top{display:flex;justify-content:space-between;font-weight:600;font-variant-numeric:tabular-nums}
+.bar{height:5px;background:#262c3a;border-radius:3px;margin:7px 0}.bar i{display:block;height:100%;border-radius:3px}
+.long .bar i{background:var(--long)}.short .bar i{background:var(--short)}
+.lab{color:var(--mut);font-size:.78rem}.pl{font-size:.8rem;margin-top:5px;font-variant-numeric:tabular-nums}
+.g{padding:0 7px;border-radius:4px;background:var(--gold);color:#10131a;font-size:.8rem}
+.empty{color:var(--mut);padding:30px 0;text-align:center}
+</style></head><body>
+<h1>BTCUSD · zones d'entrée institutionnelles</h1>
+<div class="sub">Murs persistants · absorption · profil · liquidations · OB/FVG/EQH-EQL, scorés par confluence</div>
+<div class="price"><b id="p">–</b><span id="bias" class="sub"></span></div>
+<div class="ctx" id="ctx"></div>
+<div id="out"><div class="empty">Chargement…</div></div>
+<script>
+const f=(x,d=0)=>x==null?'–':Number(x).toLocaleString('fr-FR',{maximumFractionDigits:d});
+const card=z=>`<div class="z ${z.dir}"><div class="top"><span>${f(z.lo)} – ${f(z.hi)}</span><span><span class="g">${z.grade}</span> ${z.score}</span></div>
+<div class="bar"><i style="width:${z.score}%"></i></div><div class="lab">${z.labels.join(' · ')}</div>
+<div class="pl">Entrée ${f(z.entry)} · SL ${f(z.sl)} · TP1 ${f(z.tp1)} · TP2 ${f(z.tp2)} · à ${z.dist}%</div></div>`;
+async function tick(){try{
+ const s=await (await fetch('/api/zones')).json();
+ if(!s.ready){document.getElementById('out').innerHTML='<div class="empty">Démarrage des flux…</div>';return}
+ const c=s.ctx,w=s.warm;
+ p.textContent=f(s.price,1);bias.textContent='biais flux : '+c.bias;
+ ctx.innerHTML=[`Prime Coinbase ${f(c.premium,1)}$`,`Funding ${c.funding!=null?(c.funding*100).toFixed(4)+'%':'–'}`,`OI 15min ${c.oi_chg_15m!=null?c.oi_chg_15m.toFixed(2)+'%':'–'}`,
+  `CVD 15min ${Object.entries(c.cvd15).map(([k,v])=>k+' '+f(v)).join(', ')}`,`Murs retirés ${c.spoof_pulled}`,
+  w.minutes<60?`Chauffe ${w.minutes}/60 min`:''].filter(Boolean).map(t=>`<span>${t}</span>`).join('');
+ const sh=[...s.zones.short].sort((a,b)=>b.mid-a.mid),lo=[...s.zones.long].sort((a,b)=>b.mid-a.mid);
+ out.innerHTML=(sh.map(card).join('')||'<div class="empty">Aucune zone vendeuse</div>')+
+  '<div class="sub" style="text-align:center;padding:6px">— prix actuel —</div>'+(lo.map(card).join('')||'<div class="empty">Aucune zone acheteuse</div>');
+}catch(e){}}
+tick();setInterval(tick,2000);
+</script></body></html>
