@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: btc-zones
+    runtime: python
+    region: frankfurt          # Binance/Bybit bloquent les IP US
+    plan: starter              # le plan free s'endort : l'outil doit tourner 24/7
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: LARGE_USD
+        value: "250000"
+      - key: WALL_MIN_BTC
+        value: "20"
+      - key: LIQ_MIN_USD
+        value: "500000"
+      - key: ALERT_MIN
+        value: "60"
+      - key: TG_TOKEN
+        sync: false
+      - key: TG_CHAT
+        sync: false
